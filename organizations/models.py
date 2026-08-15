@@ -6,8 +6,6 @@ import uuid
 import qrcode
 from io import BytesIO
 
-class Organization(models.fields.Field):
-    pass # Wait, this is wrong, I will rewrite this below.
 
 class Organization(models.Model):
     ORG_TYPES = [
