@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h2>Sizning tashkilotlaringiz</h2>
+    <a href="{% url 'add_organization' %}" class="btn">Tashkilot qo'shish</a>
+</div>
+
+{% if organizations %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for org in organizations %}
+            <div class="card" style="margin-bottom: 0;">
+                <h3 class="mb-1" style="margin-top: 0;">{{ org.name }}</h3>
+                <p class="text-muted mb-2" style="font-size: 0.9rem;">{{ org.get_org_type_display }}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.8rem; background: #eee; padding: 0.2rem 0.6rem; border-radius: 12px;">{{ org.feedbacks.count }} ta fikr</span>
+                    <a href="{% url 'org_detail' org.id %}" class="btn btn-outline" style="padding: 0.4rem 0.8rem;">Ko'rish</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card text-center" style="padding: 3rem 1rem;">
+        <p class="text-muted mb-2">Hali birorta ham tashkilot qo'shmagansiz.</p>
+        <a href="{% url 'add_organization' %}" class="btn">Birinchi tashkilotingizni qo'shing</a>
+    </div>
+{% endif %}
+{% endblock %}

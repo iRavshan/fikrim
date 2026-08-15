@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Tashkilot qo'shish - Fikrim{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="mb-2">Yangi tashkilot qo'shish</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+        <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline">Bekor qilish</a>
+            <button type="submit" class="btn">Saqlash</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

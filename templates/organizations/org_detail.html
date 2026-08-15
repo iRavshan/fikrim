@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ org.name }} - Fikrim{% endblock %}
+
+{% block content %}
+<div class="mb-2">
+    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--secondary); font-size: 0.9rem;">&larr; Orqaga qaytish</a>
+</div>
+
+<div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 300px;">
+        <div class="card">
+            <h2 style="margin-top: 0; margin-bottom: 0.5rem;">{{ org.name }}</h2>
+            <p class="text-muted mb-2">{{ org.get_org_type_display }} | {{ org.address }}</p>
+            
+            <h3 class="mt-2 mb-1">Mijozlar fikrlari ({{ feedbacks|length }})</h3>
+            {% if feedbacks %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for feedback in feedbacks %}
+                        <div style="padding: 1rem; border-bottom: 1px solid var(--border); {% if loop.last %}border-bottom: none;{% endif %}">
+                            <p style="margin: 0 0 0.5rem 0;">{{ feedback.text }}</p>
+                            <small class="text-muted">{{ feedback.created_at|date:"d M Y, H:i" }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">Hozircha fikrlar yo'q.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="width: 300px;">
+        <div class="card text-center">
+            <h3 style="margin-top: 0;">QR Kod</h3>
+            <p class="text-muted" style="font-size: 0.9rem;">Mijozlar ushbu kodni skaner qilib fikr qoldirishlari mumkin</p>
+            {% if org.qr_code %}
+                <img src="{{ org.qr_code.url }}" alt="QR Code" style="max-width: 100%; height: auto; margin: 1rem 0;">
+                <a href="{{ org.qr_code.url }}" download="qr_{{ org.name }}.png" class="btn" style="width: 100%; margin-bottom: 0.5rem;">Yuklab olish</a>
+            {% endif %}
+            <div style="margin-top: 1rem;">
+                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">Yoki ushbu havolani ulashing:</p>
+                <input type="text" value="{{ feedback_link }}" readonly class="form-input" style="font-size: 0.8rem; background: #eee;" onclick="this.select();">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
