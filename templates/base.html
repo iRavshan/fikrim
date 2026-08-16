@@ -404,8 +404,12 @@
                         <button type="submit" class="btn btn-ghost btn-sm">Chiqish</button>
                     </form>
                 {% else %}
-                    <a href="{% url 'login' %}">Kirish</a>
-                    <a href="{% url 'register' %}" class="btn btn-sm">Ro'yxatdan o'tish</a>
+                    {# Anonim sahifalar (QR orqali kelgan foydalanuvchi) bu blokni
+                       bo'sh qoldirib, kirish/ro'yxatdan o'tish tugmalarini yashiradi #}
+                    {% block auth_nav %}
+                        <a href="{% url 'login' %}">Kirish</a>
+                        <a href="{% url 'register' %}" class="btn btn-sm">Ro'yxatdan o'tish</a>
+                    {% endblock %}
                 {% endif %}
             </nav>
         </div>
