@@ -10,6 +10,24 @@
 *.key
 *.cert
 
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.mypy_cache/
+
+# --- Django ---
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+*.pot
+
 # --- Operating System Files ---
 # macOS
 .DS_Store
