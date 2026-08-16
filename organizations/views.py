@@ -3,8 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.http import HttpResponse
+from django.db.models import Count
 from .models import Organization, Feedback
 from .forms import OrganizationForm, FeedbackForm
+from .utils import classify_feedback
 from django.urls import reverse
 from io import BytesIO
 import qrcode
@@ -47,14 +49,40 @@ def add_organization(request):
 def organization_detail(request, org_id):
     org = get_object_or_404(Organization, id=org_id, user=request.user)
     feedbacks = org.feedbacks.all().order_by('-created_at')
-    
+
+    # Toifa bo'yicha filtrlash (URL parametri: ?category=xodimlar)
+    selected_category = request.GET.get('category', '')
+    if selected_category and selected_category in dict(Feedback.CATEGORY_CHOICES):
+        feedbacks = feedbacks.filter(category=selected_category)
+
+    # Har bir toifadagi fikrlar soni — statistika uchun
+    category_stats = (
+        org.feedbacks.values('category')
+        .annotate(count=Count('id'))
+        .order_by('category')
+    )
+    stats_dict = {item['category']: item['count'] for item in category_stats}
+    total_count = sum(stats_dict.values())
+
+    # Template uchun qulay formatda toifalar ro'yxati
+    categories = []
+    for key, label in Feedback.CATEGORY_CHOICES:
+        categories.append({
+            'key': key,
+            'label': label,
+            'count': stats_dict.get(key, 0),
+        })
+
     # Absolute URL for display
     feedback_link = request.build_absolute_uri(reverse('submit_feedback', args=[org.id]))
-    
+
     return render(request, 'organizations/org_detail.html', {
         'org': org,
         'feedbacks': feedbacks,
-        'feedback_link': feedback_link
+        'feedback_link': feedback_link,
+        'categories': categories,
+        'selected_category': selected_category,
+        'total_count': total_count,
     })
 
 def organization_qr(request, org_id):
@@ -114,6 +142,8 @@ def submit_feedback(request, org_id):
         if form.is_valid():
             feedback = form.save(commit=False)
             feedback.organization = org
+            # Gemini API orqali fikrni avtomatik toifalash
+            feedback.category = classify_feedback(feedback.text)
             feedback.save()
             return redirect('feedback_success')
     else:

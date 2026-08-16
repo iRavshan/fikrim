@@ -22,22 +22,94 @@
             </div>
         </div>
 
+        <!-- ══════════════════════════════════════════════════════════════
+             AI TAHLIL — Grafik ko'rinish
+             ══════════════════════════════════════════════════════════════ -->
+        {% if total_count > 0 %}
+        <div class="card">
+            <div class="row-between mb-2">
+                <h3 class="mb-0">📊 AI tahlili</h3>
+                <span class="chip chip-accent">Gemini AI</span>
+            </div>
+
+            <div class="chart-grid">
+                <!-- Donut diagramma -->
+                <div class="chart-box">
+                    <canvas id="categoryDonut"></canvas>
+                    <div class="chart-center-label">
+                        <span class="chart-center-num">{{ total_count }}</span>
+                        <span class="chart-center-text">jami fikr</span>
+                    </div>
+                </div>
+                <!-- Bar diagramma -->
+                <div class="chart-box">
+                    <canvas id="categoryBar"></canvas>
+                </div>
+            </div>
+
+            <!-- Toifa legendasi -->
+            <div class="chart-legend">
+                {% for cat in categories %}
+                <div class="legend-item">
+                    <span class="legend-dot legend-dot-{{ cat.key }}"></span>
+                    <span class="legend-label">{{ cat.label }}</span>
+                    <span class="legend-value">{{ cat.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Fikrlar va filtr ── -->
         <div class="card">
             <div class="row-between mb-1">
                 <h3 class="mb-0">Mijozlar fikrlari</h3>
                 <span class="chip">{{ feedbacks|length }} ta</span>
             </div>
+
+            <!-- Toifa filtrlash tugmalari -->
+            {% if total_count > 0 %}
+            <div class="filter-bar">
+                <a href="{% url 'org_detail' org.id %}"
+                   class="filter-btn {% if not selected_category %}active{% endif %}">
+                    Barchasi
+                    <span class="filter-count">{{ total_count }}</span>
+                </a>
+                {% for cat in categories %}
+                {% if cat.count > 0 %}
+                <a href="{% url 'org_detail' org.id %}?category={{ cat.key }}"
+                   class="filter-btn {% if selected_category == cat.key %}active{% endif %}">
+                    {{ cat.label }}
+                    <span class="filter-count">{{ cat.count }}</span>
+                </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
             {% if feedbacks %}
-                <div class="divided" style="max-height: 420px; overflow-y: auto;">
+                <div class="divided" style="max-height: 520px; overflow-y: auto;">
                     {% for feedback in feedbacks %}
                         <div class="feedback-item">
-                            <p>{{ feedback.text }}</p>
-                            <small class="text-muted">{{ feedback.created_at|date:"d M Y, H:i" }}</small>
+                            <div class="row-between" style="align-items: flex-start; gap: 0.5rem;">
+                                <p style="margin: 0 0 0.35rem; flex: 1;">{{ feedback.text }}</p>
+                                <span class="badge badge-{{ feedback.category }}">
+                                    {{ feedback.get_category_display }}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                {{ feedback.created_at|date:"d M Y, H:i" }}
+                                {% if feedback.room %} &middot; {{ feedback.room }}{% endif %}
+                            </small>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-muted text-sm mb-0">Hozircha fikrlar yo'q. QR kodni mijozlarga ko'rsating.</p>
+                {% if selected_category %}
+                    <p class="text-muted text-sm mb-0">Bu toifada hozircha fikrlar yo'q.</p>
+                {% else %}
+                    <p class="text-muted text-sm mb-0">Hozircha fikrlar yo'q. QR kodni mijozlarga ko'rsating.</p>
+                {% endif %}
             {% endif %}
         </div>
     </div>
@@ -54,6 +126,144 @@
                 <input type="text" value="{{ feedback_link }}" readonly class="form-input text-sm" onclick="this.select();">
             </div>
         </div>
+
+        <!-- ── AI toifalash haqida izoh ── -->
+        <div class="card">
+            <h3 class="mb-1" style="font-size: 0.9rem;">🤖 AI toifalash</h3>
+            <p class="text-muted text-sm mb-0">
+                Har bir yangi fikr Gemini AI tomonidan avtomatik ravishda toifaga ajratiladi.
+                Bu sizga muammoli sohalarni tezroq aniqlashda yordam beradi.
+            </p>
+        </div>
     </div>
 </div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+{% if total_count > 0 %}
+<script>
+(function () {
+    // ── Ma'lumotlar ──
+    const labels = [{% for cat in categories %}"{{ cat.label }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const values = [{% for cat in categories %}{{ cat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+    // ── Ranglar — badge ranglari bilan mos ──
+    const COLORS = {
+        bg:   ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#6b7280'],
+        soft: ['rgba(139,92,246,0.15)', 'rgba(59,130,246,0.15)', 'rgba(16,185,129,0.15)', 'rgba(245,158,11,0.15)', 'rgba(107,114,128,0.15)'],
+    };
+
+    // ── Umumiy Chart.js sozlamalar ──
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const textColor = isDark ? '#ececf1' : '#17171c';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+
+    // ═══════ DONUT DIAGRAMMA ═══════
+    const donutCtx = document.getElementById('categoryDonut').getContext('2d');
+    new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: COLORS.bg,
+                borderColor: isDark ? '#16161a' : '#ffffff',
+                borderWidth: 3,
+                hoverOffset: 6,
+                borderRadius: 4,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '68%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDark ? '#1e1e24' : '#ffffff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: isDark ? '#26262e' : '#e8e8ec',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    padding: 10,
+                    callbacks: {
+                        label: function(ctx) {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total ? Math.round(ctx.raw / total * 100) : 0;
+                            return ' ' + ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                        },
+                    },
+                },
+            },
+            animation: {
+                animateRotate: true,
+                duration: 900,
+                easing: 'easeOutQuart',
+            },
+        },
+    });
+
+    // ═══════ BAR DIAGRAMMA ═══════
+    const barCtx = document.getElementById('categoryBar').getContext('2d');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: labels.map(function(l) { return l.split(' ')[0]; }),
+            datasets: [{
+                data: values,
+                backgroundColor: COLORS.bg,
+                borderColor: COLORS.bg,
+                borderWidth: 0,
+                borderRadius: 6,
+                borderSkipped: false,
+                barPercentage: 0.65,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDark ? '#1e1e24' : '#ffffff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: isDark ? '#26262e' : '#e8e8ec',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    padding: 10,
+                },
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0,
+                        font: { size: 11 },
+                    },
+                    grid: { color: gridColor, drawBorder: false },
+                    border: { display: false },
+                },
+                y: {
+                    ticks: { font: { size: 11, weight: '500' } },
+                    grid: { display: false },
+                    border: { display: false },
+                },
+            },
+            animation: {
+                duration: 800,
+                easing: 'easeOutQuart',
+            },
+        },
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}
