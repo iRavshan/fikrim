@@ -3,10 +3,17 @@
 {% block title %}Rahmat! - Fikrim{% endblock %}
 
 {% block content %}
-<div class="card text-center" style="max-width: 500px; margin: 4rem auto; padding: 3rem 2rem;">
-    <div style="font-size: 4rem; color: #28a745; margin-bottom: 1rem;">&#10004;</div>
-    <h2 style="margin-top: 0;">Katta rahmat!</h2>
-    <p class="text-muted" style="margin-bottom: 2rem;">Sizning fikringiz muvaffaqiyatli yuborildi. Bu tashkilotga o'z xizmatlarini yaxshilashga yordam beradi.</p>
-    <a href="javascript:window.close();" class="btn btn-outline">Oynani yopish</a>
+<div class="narrow" style="margin-top: 3rem;">
+    <div class="card empty">
+        <div style="width: 56px; height: 56px; margin: 0 auto 1.25rem; border-radius: 50%;
+                    background: var(--success-soft); color: var(--success);
+                    display: grid; place-items: center; font-size: 1.6rem;">&#10004;</div>
+        <h2 class="mb-1">Katta rahmat!</h2>
+        <p class="text-muted text-sm mb-3">
+            Fikringiz muvaffaqiyatli yuborildi. Bu tashkilotga xizmatlarini
+            yaxshilashga yordam beradi.
+        </p>
+        <a href="javascript:window.close();" class="btn btn-outline">Oynani yopish</a>
+    </div>
 </div>
 {% endblock %}

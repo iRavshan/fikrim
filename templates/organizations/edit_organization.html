@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Tashkilot qo'shish - Fikrim{% endblock %}
+{% block title %}{{ org.name }} - Tahrirlash{% endblock %}
 
 {% block content %}
 <div class="medium">
     <div class="mb-2">
-        <a href="{% url 'dashboard' %}" class="back-link">&larr; Orqaga qaytish</a>
+        <a href="{% url 'org_detail' org.id %}" class="back-link">&larr; Orqaga qaytish</a>
     </div>
     <div class="card">
-        <h2 class="mb-1">Yangi tashkilot qo'shish</h2>
-        <p class="text-muted text-sm mb-3">Saqlagandan so'ng tashkilotga QR kod avtomatik yaratiladi.</p>
+        <h2 class="mb-1">Tashkilotni tahrirlash</h2>
+        <p class="text-muted text-sm mb-3">QR kod va havola o'zgarmaydi &mdash; oldin tarqatilgan kodlar ishlayveradi.</p>
         <form method="post">
             {% csrf_token %}
             {% for field in form %}
@@ -20,7 +20,7 @@
                 </div>
             {% endfor %}
             <div class="row-between mt-3">
-                <a href="{% url 'dashboard' %}" class="btn btn-outline">Bekor qilish</a>
+                <a href="{% url 'org_detail' org.id %}" class="btn btn-outline">Bekor qilish</a>
                 <button type="submit" class="btn">Saqlash</button>
             </div>
         </form>

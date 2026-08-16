@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ org.name }} - O'chirish{% endblock %}
+
+{% block content %}
+<div class="medium">
+    <div class="mb-2">
+        <a href="{% url 'org_detail' org.id %}" class="back-link">&larr; Orqaga qaytish</a>
+    </div>
+    <div class="card">
+        <h2 class="mb-1">Tashkilotni o'chirish</h2>
+        <p class="mb-2"><strong>{{ org.name }}</strong> tashkilotini o'chirmoqchimisiz?</p>
+        <div class="note" style="background: var(--danger-soft); border-left-color: var(--danger);">
+            Unga qoldirilgan {{ org.feedbacks.count }} ta fikr va QR kod ham butunlay o'chib ketadi.
+            Bu amalni ortga qaytarib bo'lmaydi.
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row-between mt-3">
+                <a href="{% url 'org_detail' org.id %}" class="btn btn-outline">Bekor qilish</a>
+                <button type="submit" class="btn btn-danger-solid">Ha, o'chirilsin</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

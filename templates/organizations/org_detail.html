@@ -4,42 +4,54 @@
 
 {% block content %}
 <div class="mb-2">
-    <a href="{% url 'dashboard' %}" style="text-decoration: none; color: var(--secondary); font-size: 0.9rem;">&larr; Orqaga qaytish</a>
+    <a href="{% url 'dashboard' %}" class="back-link">&larr; Orqaga qaytish</a>
 </div>
 
-<div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-    <div style="flex: 1; min-width: 300px;">
+<div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-start;">
+    <div style="flex: 1 1 340px;">
         <div class="card">
-            <h2 style="margin-top: 0; margin-bottom: 0.5rem;">{{ org.name }}</h2>
-            <p class="text-muted mb-2">{{ org.get_org_type_display }} | {{ org.address }}</p>
-            
-            <h3 class="mt-2 mb-1">Mijozlar fikrlari ({{ feedbacks|length }})</h3>
+            <div class="row-between mb-2" style="align-items: flex-start;">
+                <div>
+                    <h2 class="mb-1">{{ org.name }}</h2>
+                    <p class="text-muted text-sm mb-0">{{ org.get_org_type_display }} &middot; {{ org.address }}</p>
+                </div>
+                <div class="row" style="flex-shrink: 0;">
+                    <a href="{% url 'edit_organization' org.id %}" class="btn btn-outline btn-sm">Tahrirlash</a>
+                    <a href="{% url 'delete_organization' org.id %}" class="btn btn-danger btn-sm">O'chirish</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="row-between mb-1">
+                <h3 class="mb-0">Mijozlar fikrlari</h3>
+                <span class="chip">{{ feedbacks|length }} ta</span>
+            </div>
             {% if feedbacks %}
-                <div style="max-height: 400px; overflow-y: auto;">
+                <div class="divided" style="max-height: 420px; overflow-y: auto;">
                     {% for feedback in feedbacks %}
-                        <div style="padding: 1rem; border-bottom: 1px solid var(--border); {% if loop.last %}border-bottom: none;{% endif %}">
-                            <p style="margin: 0 0 0.5rem 0;">{{ feedback.text }}</p>
+                        <div class="feedback-item">
+                            <p>{{ feedback.text }}</p>
                             <small class="text-muted">{{ feedback.created_at|date:"d M Y, H:i" }}</small>
                         </div>
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="text-muted">Hozircha fikrlar yo'q.</p>
+                <p class="text-muted text-sm mb-0">Hozircha fikrlar yo'q. QR kodni mijozlarga ko'rsating.</p>
             {% endif %}
         </div>
     </div>
-    
-    <div style="width: 300px;">
+
+    <div style="flex: 0 1 300px; min-width: 260px;">
         <div class="card text-center">
-            <h3 style="margin-top: 0;">QR Kod</h3>
-            <p class="text-muted" style="font-size: 0.9rem;">Mijozlar ushbu kodni skaner qilib fikr qoldirishlari mumkin</p>
-            {% if org.qr_code %}
-                <img src="{{ org.qr_code.url }}" alt="QR Code" style="max-width: 100%; height: auto; margin: 1rem 0;">
-                <a href="{{ org.qr_code.url }}" download="qr_{{ org.name }}.png" class="btn" style="width: 100%; margin-bottom: 0.5rem;">Yuklab olish</a>
-            {% endif %}
-            <div style="margin-top: 1rem;">
-                <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">Yoki ushbu havolani ulashing:</p>
-                <input type="text" value="{{ feedback_link }}" readonly class="form-input" style="font-size: 0.8rem; background: #eee;" onclick="this.select();">
+            <h3 class="mb-1">QR Kod</h3>
+            <p class="text-muted text-sm">Mijozlar skaner qilib fikr qoldiradi</p>
+            <img src="{% url 'organization_qr' org.id %}" alt="QR kod"
+                 style="width: 100%; max-width: 220px; height: auto; margin: 0.75rem auto 1.25rem; display: block; border-radius: var(--radius-sm); background: #fff; padding: 0.5rem;">
+            <a href="{% url 'organization_qr' org.id %}?download=1" class="btn btn-block">Yuklab olish</a>
+            <div class="mt-3" style="text-align: left;">
+                <p class="text-muted text-sm mb-1">Yoki havolani ulashing:</p>
+                <input type="text" value="{{ feedback_link }}" readonly class="form-input text-sm" onclick="this.select();">
             </div>
         </div>
     </div>

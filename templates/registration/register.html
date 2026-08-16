@@ -3,25 +3,28 @@
 {% block title %}Ro'yxatdan o'tish - Fikrim{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 400px; margin: 0 auto;">
-    <h2 class="mb-2">Ro'yxatdan o'tish</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        {% for field in form %}
-            <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <div class="helptext">{{ field.help_text }}</div>
-                {% endif %}
-                {{ field.errors }}
-            </div>
-        {% endfor %}
-        <button type="submit" class="btn" style="width: 100%;">Ro'yxatdan o'tish</button>
-    </form>
-    <p class="text-center mt-2" style="font-size: 0.9rem;">
-        Hisobingiz bormi? <a href="{% url 'login' %}" style="color: var(--primary);">Tizimga kirish</a>
-    </p>
+<div class="narrow" style="margin-top: 2rem;">
+    <div class="card">
+        <h2 class="mb-1">Ro'yxatdan o'tish</h2>
+        <p class="text-muted text-sm mb-3">Bir daqiqada hisob oching va QR kod oling.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="helptext">{{ field.help_text }}</div>
+                    {% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-block">Ro'yxatdan o'tish</button>
+        </form>
+        <p class="text-center text-sm text-muted mt-3 mb-0">
+            Hisobingiz bormi? <a href="{% url 'login' %}">Tizimga kirish</a>
+        </p>
+    </div>
 </div>
 {% endblock %}
