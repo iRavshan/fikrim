@@ -139,13 +139,19 @@ def classify_feedback_async(feedback_id):
         # yopmasak ulanish ochiq qolib ketadi.
         from django.db import connection
         from .models import Feedback
+        # Boshlanish va natija alohida yoziladi: shunda loglarda "oqim
+        # umuman ishga tushmadi" holati "ishga tushdi, lekin xato berdi"
+        # dan ajraladi. Aks holda har ikkalasi ham jimgina 'boshqa' bo'lib
+        # ko'rinadi va sababni aniqlab bo'lmaydi.
+        logger.info("Fikr %s: fon toifalash boshlandi", feedback_id)
         try:
             fikr = Feedback.objects.get(pk=feedback_id)
             toifa = classify_feedback(fikr.text)
             if toifa != fikr.category:
                 Feedback.objects.filter(pk=feedback_id).update(category=toifa)
+            logger.info("Fikr %s: toifa = %s", feedback_id, toifa)
         except Exception as exc:
-            logger.error("Fon toifalashda xatolik: %s", exc)
+            logger.error("Fikr %s: fon toifalashda xatolik: %s", feedback_id, exc)
         finally:
             connection.close()
 

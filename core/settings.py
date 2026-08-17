@@ -140,6 +140,36 @@ SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 
+# ── Log yozuvlari ───────────────────────────────────────────────────────
+# Django standart sozlamasi faqat "django" logger'ini boshqaradi, bizning
+# modullarimiz esa root logger'ga tushadi. U yerda handler bo'lmagani uchun
+# xabarlar Railway konsolida ko'rinmay qolishi mumkin. Toifalash nosozligi
+# jimgina "boshqa" ga aylanadi, shuning uchun sababni ko'rish shart.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'oddiy': {
+            'format': '[{levelname}] {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'konsol': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'oddiy',
+        },
+    },
+    'loggers': {
+        'organizations': {
+            'handlers': ['konsol'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
 # ── Rasmlarni saqlash: Cloudflare R2 ────────────────────────────────────
 # Railway fayl tizimi har deployda tozalanadi, shuning uchun bemor yuborgan
 # rasmlar u yerda saqlanmaydi — QR kodlardan farqli, rasmni qayta
