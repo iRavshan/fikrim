@@ -6,53 +6,79 @@
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}Fikrim{% endblock %}</title>
     <style>
-        /* ---- Ranglar tizimi ---------------------------------------------- */
+        /* ---- Ranglar tizimi ----------------------------------------------
+           Asos palitra: #ff771c (to'q sariq), #f5ede0 (krem),
+           #161311 (qora), #546877 (shifer-ko'k).
+
+           Diqqat: to'q sariq fonda OQ matn 2.66:1 kontrast beradi va WCAG
+           talabini bajarmaydi, qora matn esa 6.97:1. Shuning uchun
+           --on-accent qora, oq emas. */
         :root {
-            --bg: #fbfbfc;
-            --surface: #ffffff;
-            --surface-2: #f4f4f6;
-            --text: #17171c;
-            --muted: #6e6e79;
-            --border: #e8e8ec;
+            --bg: #f5ede0;
+            --surface: #fffdf9;
+            --surface-2: #ece2d2;
+            --text: #161311;
+            --muted: #546877;
+            --border: #e0d4c1;
 
-            --accent: #4f46e5;
-            --accent-hover: #4338ca;
-            --accent-soft: #eef0fe;
-            --on-accent: #ffffff;
+            --accent: #ff771c;
+            --accent-hover: #e8630c;
+            --accent-soft: #ffeada;
+            --on-accent: #161311;
 
-            --danger: #cc1f1f;
-            --danger-soft: #fef2f2;
-            --on-danger: #ffffff;
-            --success: #047857;
-            --success-soft: #ecfdf5;
+            --danger: #b3261e;
+            --danger-soft: #fbeae8;
+            --on-danger: #fffdf9;
+            --success: #2f6b52;
+            --success-soft: #e6f0eb;
+
+            /* Toifa ranglari (grafik, badge va legenda uchun yagona manba).
+               Kategorik palitra validator bilan tekshirilgan: eng yomon
+               qo'shni juftlik CVD dE 10.8, oddiy ko'rish dE 19.7, barchasi
+               sirtga nisbatan 3:1 dan yuqori. Tartibni o'zgartirmang —
+               aynan tartib rang ko'rlik xavfsizligini ta'minlaydi. */
+            --series-1: #c2410c;
+            --series-2: #1f6fb2;
+            --series-3: #0a6b35;
+            --series-4: #a67c00;
+            --series-5: #7d5ba6;
 
             --radius: 12px;
             --radius-sm: 8px;
-            --shadow: 0 1px 2px rgba(16, 16, 26, 0.04), 0 4px 16px rgba(16, 16, 26, 0.04);
+            --shadow: 0 1px 2px rgba(22, 19, 17, 0.05), 0 4px 16px rgba(22, 19, 17, 0.06);
             --ring: 0 0 0 3px var(--accent-soft);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #0e0e11;
-                --surface: #16161a;
-                --surface-2: #1e1e24;
-                --text: #ececf1;
-                --muted: #9b9ba6;
-                --border: #26262e;
+                --bg: #161311;
+                --surface: #1f1b18;
+                --surface-2: #2a2420;
+                --text: #f5ede0;
+                --muted: #9aabb8;
+                --border: #342d27;
 
-                --accent: #7c76f0;
-                --accent-hover: #918cf5;
-                --accent-soft: #1a182e;
-                --on-accent: #0e0e11;
+                --accent: #ff771c;
+                --accent-hover: #ff9042;
+                --accent-soft: #3a2410;
+                --on-accent: #161311;
 
-                --danger: #f87171;
-                --danger-soft: #2a1618;
-                --on-danger: #0e0e11;
-                --success: #34d399;
-                --success-soft: #10281f;
+                --danger: #f08a80;
+                --danger-soft: #33201d;
+                --on-danger: #161311;
+                --success: #6fc39d;
+                --success-soft: #172a23;
 
-                --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+                /* Qorong'i rejim uchun alohida tanlangan qadamlar — yorug'
+                   rejimning avtomatik ag'darilishi emas. Qorong'i sirtga
+                   nisbatan alohida tekshirilgan: CVD dE 9.1, oddiy dE 16.4. */
+                --series-1: #e06a24;
+                --series-2: #4e9ae0;
+                --series-3: #38a96d;
+                --series-4: #9c7519;
+                --series-5: #9478c0;
+
+                --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25);
             }
         }
 
@@ -121,7 +147,7 @@
             width: 26px;
             height: 26px;
             border-radius: 7px;
-            background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #22d3ee));
+            background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--muted)));
             color: var(--on-accent);
             display: grid;
             place-items: center;
@@ -394,18 +420,20 @@
             white-space: nowrap;
             line-height: 1.5;
         }
-        .badge-xodimlar { background: #ede9fe; color: #6d28d9; }
-        .badge-sharoit  { background: #dbeafe; color: #1d4ed8; }
-        .badge-tibbiy   { background: #d1fae5; color: #047857; }
-        .badge-moliyaviy{ background: #fef3c7; color: #b45309; }
-        .badge-boshqa   { background: var(--surface-2); color: var(--muted); }
+        /* Badge matni fonda o'qilishi shart — har bir juftlik WCAG matn
+           talabidan (4.5:1) yuqori: 5.2–6.7 oralig'ida o'lchangan. */
+        .badge-xodimlar { background: #fbe9df; color: #9c3409; }
+        .badge-sharoit  { background: #e3eefa; color: #17548a; }
+        .badge-tibbiy   { background: #e0f0e7; color: #0a6b35; }
+        .badge-moliyaviy{ background: #f7eeda; color: #7d5e00; }
+        .badge-boshqa   { background: #eee8f5; color: #5f4480; }
 
         @media (prefers-color-scheme: dark) {
-            .badge-xodimlar { background: #2e1065; color: #c4b5fd; }
-            .badge-sharoit  { background: #172554; color: #93c5fd; }
-            .badge-tibbiy   { background: #052e16; color: #6ee7b7; }
-            .badge-moliyaviy{ background: #422006; color: #fcd34d; }
-            .badge-boshqa   { background: var(--surface-2); color: var(--muted); }
+            .badge-xodimlar { background: #3a1f10; color: #f0955c; }
+            .badge-sharoit  { background: #132b40; color: #7ab6ea; }
+            .badge-tibbiy   { background: #0f2c1d; color: #5cc08c; }
+            .badge-moliyaviy{ background: #332608; color: #c9a03f; }
+            .badge-boshqa   { background: #2a2138; color: #b7a2d9; }
         }
 
         /* ---- Filtr tugmalari ---------------------------------------------- */
@@ -549,11 +577,11 @@
             border-radius: 3px;
             flex-shrink: 0;
         }
-        .legend-dot-xodimlar  { background: #8b5cf6; }
-        .legend-dot-sharoit   { background: #3b82f6; }
-        .legend-dot-tibbiy    { background: #10b981; }
-        .legend-dot-moliyaviy { background: #f59e0b; }
-        .legend-dot-boshqa    { background: #6b7280; }
+        .legend-dot-xodimlar  { background: var(--series-1); }
+        .legend-dot-sharoit   { background: var(--series-2); }
+        .legend-dot-tibbiy    { background: var(--series-3); }
+        .legend-dot-moliyaviy { background: var(--series-4); }
+        .legend-dot-boshqa    { background: var(--series-5); }
         .legend-label { color: var(--muted); }
         .legend-value {
             font-weight: 650;
