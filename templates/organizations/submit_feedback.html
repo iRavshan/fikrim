@@ -19,23 +19,171 @@
             (ismingiz, telefon raqamingiz) saqlanmaydi.
         </p>
 
-        <form method="post" enctype="multipart/form-data" class="mt-3">
+        <form method="post" enctype="multipart/form-data" class="mt-3" id="fikr-forma">
             {% csrf_token %}
+
             <div class="form-group">
                 {{ form.text }}
                 {{ form.text.errors }}
             </div>
+
             <div class="form-group">
-                <label for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
-                {{ form.image }}
-                {{ form.image.errors }}
+                <label class="mb-1">Rasm biriktirish (ixtiyoriy)</label>
+
+                <div class="upload-buttons">
+                    <button type="button" class="btn btn-outline btn-sm" id="tugma-kamera">
+                        Kamera
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" id="tugma-galereya">
+                        Galereyadan tanlash
+                    </button>
+                </div>
+
+                {% comment %}
+                    Ikkita alohida manba: capture atributi telefonda to'g'ridan-to'g'ri
+                    kamerani ochadi, ikkinchisi esa galereyani. Tanlangan fayllar
+                    JavaScript orqali yig'ilib, pastdagi "images" maydoniga
+                    joylanadi — serverga aynan o'sha yuboriladi.
+                {% endcomment %}
+                <input type="file" id="manba-kamera" accept="image/*" capture="environment" hidden>
+                <input type="file" id="manba-galereya" accept="image/*" multiple hidden>
+                <input type="file" name="images" id="rasm-maydoni" accept="image/*" multiple hidden>
+
+                <div class="preview-grid" id="preview-setka"></div>
+
+                {% if rasm_xatosi %}
+                    <ul class="errorlist"><li>{{ rasm_xatosi }}</li></ul>
+                {% endif %}
+
+                <p class="helptext" id="rasm-holati"></p>
                 <p class="helptext">
                     Rasmdagi joylashuv va telefon ma'lumotlari avtomatik o'chiriladi.
                     Rasmga boshqa bemorlar yoki tibbiy hujjatlar tushmasligiga e'tibor bering.
                 </p>
             </div>
-            <button type="submit" class="btn btn-block" style="padding: 0.8rem;">Yuborish</button>
+
+            <button type="submit" class="btn btn-block" style="padding: 0.8rem;" id="tugma-yuborish">
+                Yuborish
+            </button>
         </form>
     </div>
 </div>
+
+<script>
+(function () {
+    var MAX_SONI = {{ max_images }};
+    var MAX_MB = {{ max_total_mb }};
+    var MAX_BAYT = MAX_MB * 1024 * 1024;
+
+    var kamera = document.getElementById('manba-kamera');
+    var galereya = document.getElementById('manba-galereya');
+    var maydon = document.getElementById('rasm-maydoni');
+    var setka = document.getElementById('preview-setka');
+    var holat = document.getElementById('rasm-holati');
+    var yuborish = document.getElementById('tugma-yuborish');
+
+    var tanlangan = [];   // File obyektlari
+    var havolalar = [];   // createObjectURL natijalari — keyin bo'shatiladi
+
+    document.getElementById('tugma-kamera').addEventListener('click', function () {
+        kamera.click();
+    });
+    document.getElementById('tugma-galereya').addEventListener('click', function () {
+        galereya.click();
+    });
+
+    [kamera, galereya].forEach(function (manba) {
+        manba.addEventListener('change', function () {
+            Array.prototype.forEach.call(manba.files, function (f) {
+                if (f.type.indexOf('image/') === 0) {
+                    tanlangan.push(f);
+                }
+            });
+            // Bo'shatamiz, aks holda bir xil faylni ikkinchi marta
+            // tanlaganda change hodisasi ishlamaydi.
+            manba.value = '';
+            chiz();
+        });
+    });
+
+    function hajm(baytlar) {
+        if (baytlar >= 1024 * 1024) {
+            return (baytlar / 1024 / 1024).toFixed(1) + ' MB';
+        }
+        return Math.round(baytlar / 1024) + ' KB';
+    }
+
+    function chiz() {
+        // Eski havolalarni bo'shatmasak brauzer xotirasi to'lib boradi
+        havolalar.forEach(function (u) { URL.revokeObjectURL(u); });
+        havolalar = [];
+        setka.innerHTML = '';
+
+        tanlangan.forEach(function (fayl, indeks) {
+            var url = URL.createObjectURL(fayl);
+            havolalar.push(url);
+
+            var katak = document.createElement('div');
+            katak.className = 'preview-item';
+
+            var rasm = document.createElement('img');
+            rasm.src = url;
+            rasm.alt = 'Tanlangan rasm';
+
+            var ochir = document.createElement('button');
+            ochir.type = 'button';
+            ochir.className = 'preview-remove';
+            ochir.setAttribute('aria-label', 'Rasmni olib tashlash');
+            ochir.textContent = '×';
+            ochir.addEventListener('click', function () {
+                tanlangan.splice(indeks, 1);
+                chiz();
+            });
+
+            var olcham = document.createElement('span');
+            olcham.className = 'preview-size';
+            olcham.textContent = hajm(fayl.size);
+
+            katak.appendChild(rasm);
+            katak.appendChild(ochir);
+            katak.appendChild(olcham);
+            setka.appendChild(katak);
+        });
+
+        // Yig'ilgan fayllarni forma yuboradigan maydonga joylaymiz
+        var dt = new DataTransfer();
+        tanlangan.forEach(function (f) { dt.items.add(f); });
+        maydon.files = dt.files;
+
+        holatniYangila();
+    }
+
+    function holatniYangila() {
+        var jami = tanlangan.reduce(function (s, f) { return s + f.size; }, 0);
+        var kop = tanlangan.length > MAX_SONI;
+        var ogir = jami > MAX_BAYT;
+
+        if (kop) {
+            holat.textContent = 'Eng ko‘pi bilan ' + MAX_SONI + ' ta rasm biriktirish mumkin.';
+        } else if (ogir) {
+            holat.textContent = 'Umumiy hajm ' + MAX_MB + ' MB dan oshdi (' + hajm(jami) + ').';
+        } else if (tanlangan.length === 0) {
+            holat.textContent = 'Eng ko‘pi bilan ' + MAX_SONI + ' ta rasm, umumiy hajmi '
+                              + MAX_MB + ' MB gacha.';
+        } else {
+            holat.textContent = tanlangan.length + ' ta rasm · ' + hajm(jami)
+                              + ' / ' + MAX_MB + ' MB';
+        }
+
+        if (kop || ogir) {
+            holat.classList.add('helptext-error');
+        } else {
+            holat.classList.remove('helptext-error');
+        }
+        yuborish.disabled = kop || ogir;
+    }
+
+    chiz();
+})();
+</script>
 {% endblock %}

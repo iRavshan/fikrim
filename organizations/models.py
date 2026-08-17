@@ -59,8 +59,9 @@ class Feedback(models.Model):
         Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='feedbacks'
     )
     text = models.TextField(verbose_name="Fikr va mulohaza")
-    # Ixtiyoriy dalil rasmi. Saqlashdan oldin images.sanitize_image() orqali
-    # o'tkaziladi: EXIF (GPS, telefon modeli) tozalanadi va hajmi kichrayadi.
+    # Eskirgan: rasmlar endi FeedbackImage modelida saqlanadi. Maydon eski
+    # yozuvlar uchun qoldirilgan va yangi kod uni ishlatmaydi. Ustunni
+    # o'chirish alohida, kod deploy bo'lgandan keyingi qadam bo'ladi.
     image = models.ImageField(
         upload_to='feedback/', blank=True, null=True, verbose_name="Rasm"
     )
@@ -82,4 +83,26 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"Feedback for {self.organization.name} at {self.created_at}"
+
+
+class FeedbackImage(models.Model):
+    """Fikrga biriktirilgan rasm. Bitta fikrda bir nechta rasm bo'lishi mumkin.
+
+    Saqlashdan oldin har bir rasm images.sanitize_image() orqali o'tkaziladi:
+    EXIF (GPS koordinatalari, telefon modeli, sana) tozalanadi va hajmi
+    kichraytiriladi.
+    """
+
+    feedback = models.ForeignKey(
+        Feedback, on_delete=models.CASCADE, related_name='images'
+    )
+    image = models.ImageField(upload_to='feedback/', verbose_name="Rasm")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Bemor tanlagan tartib saqlanadi
+        ordering = ['created_at', 'id']
+
+    def __str__(self):
+        return f"Rasm #{self.pk} (fikr {self.feedback_id})"
 

@@ -4,10 +4,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.http import HttpResponse
 from django.db.models import Count
-from .models import Organization, Feedback
+from .models import Organization, Feedback, FeedbackImage
 from .forms import OrganizationForm, FeedbackForm
 from .utils import classify_feedback_async
-from .images import sanitize_image
+from .images import sanitize_image, validate_images, MAX_IMAGES, MAX_TOTAL_MB
 from django.urls import reverse
 from io import BytesIO
 import qrcode
@@ -49,7 +49,9 @@ def add_organization(request):
 @login_required
 def organization_detail(request, org_id):
     org = get_object_or_404(Organization, id=org_id, user=request.user)
-    feedbacks = org.feedbacks.all().order_by('-created_at')
+    # prefetch_related bo'lmasa har bir fikr uchun rasmlar alohida so'rov
+    # bilan olinadi (N+1). Bitta tashkilotda yuzlab fikr bo'lishi mumkin.
+    feedbacks = org.feedbacks.all().prefetch_related('images').order_by('-created_at')
 
     # Toifa bo'yicha filtrlash (URL parametri: ?category=xodimlar)
     selected_category = request.GET.get('category', '')
@@ -138,16 +140,22 @@ def delete_organization(request, org_id):
 
 def submit_feedback(request, org_id):
     org = get_object_or_404(Organization, id=org_id)
+    rasm_xatosi = None
     if request.method == 'POST':
-        form = FeedbackForm(request.POST, request.FILES)
-        if form.is_valid():
+        form = FeedbackForm(request.POST)
+        rasmlar = request.FILES.getlist('images')
+        rasm_xatosi = validate_images(rasmlar)
+        if form.is_valid() and rasm_xatosi is None:
             feedback = form.save(commit=False)
             feedback.organization = org
-            if feedback.image:
-                # Rasm bemorning GPS koordinatalari va telefon ma'lumotlarini
-                # o'zi bilan olib kelishi mumkin — saqlashdan oldin tozalanadi.
-                feedback.image = sanitize_image(feedback.image)
             feedback.save()
+            # Har bir rasm saqlashdan oldin tozalanadi: EXIF ichidagi GPS
+            # koordinatalari va telefon ma'lumotlari bemorning anonimligini
+            # buzib qo'yishi mumkin.
+            for rasm in rasmlar:
+                FeedbackImage.objects.create(
+                    feedback=feedback, image=sanitize_image(rasm)
+                )
             # Toifalash fonda bajariladi: Gemini javobi ~17 soniya oladi va
             # bemor uni kutib turmasligi kerak. Fikr darhol saqlanadi,
             # toifa esa bir necha soniyadan keyin yangilanadi.
@@ -155,7 +163,13 @@ def submit_feedback(request, org_id):
             return redirect('feedback_success')
     else:
         form = FeedbackForm()
-    return render(request, 'organizations/submit_feedback.html', {'form': form, 'org': org})
+    return render(request, 'organizations/submit_feedback.html', {
+        'form': form,
+        'org': org,
+        'rasm_xatosi': rasm_xatosi,
+        'max_images': MAX_IMAGES,
+        'max_total_mb': MAX_TOTAL_MB,
+    })
 
 def feedback_success(request):
     return render(request, 'organizations/feedback_success.html')

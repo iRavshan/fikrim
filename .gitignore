@@ -9,6 +9,7 @@
 *.pem
 *.key
 *.cert
+*.env.example
 
 # --- Python ---
 __pycache__/

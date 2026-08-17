@@ -24,8 +24,39 @@ MAX_SIDE = 1600
 
 JPEG_QUALITY = 82
 
-# Formadan o'tkaziladigan eng katta fayl hajmi (qayta ishlashdan oldin).
-MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+# Bitta fikrga biriktirish mumkin bo'lgan rasmlar soni. Har bir rasm
+# alohida qayta ishlanib R2 ga yuklanadi, shuning uchun son cheksiz
+# bo'lsa bemor javobni uzoq kutadi.
+MAX_IMAGES = 10
+
+# Barcha rasmlarning umumiy hajmi (qayta ishlashdan oldingi, xom holat).
+MAX_TOTAL_MB = 50
+MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024
+
+
+def validate_images(files):
+    """Yuklangan rasmlar ro'yxatini tekshiradi.
+
+    Muammo bo'lsa foydalanuvchiga ko'rsatiladigan xabarni, aks holda
+    None qaytaradi.
+    """
+    if not files:
+        return None
+
+    if len(files) > MAX_IMAGES:
+        return (
+            f"Eng ko'pi bilan {MAX_IMAGES} ta rasm biriktirish mumkin. "
+            f"Siz {len(files)} ta tanladingiz."
+        )
+
+    jami = sum(f.size for f in files)
+    if jami > MAX_TOTAL_BYTES:
+        return (
+            f"Rasmlarning umumiy hajmi {MAX_TOTAL_MB} MB dan oshmasligi kerak. "
+            f"Hozirgi hajm: {jami / 1024 / 1024:.1f} MB."
+        )
+
+    return None
 
 
 def sanitize_image(uploaded_file):
