@@ -25,12 +25,31 @@
         <!-- ══════════════════════════════════════════════════════════════
              AI TAHLIL — Grafik ko'rinish
              ══════════════════════════════════════════════════════════════ -->
-        {% if total_count > 0 %}
         <div class="card">
             <div class="row-between mb-2">
                 <h3 class="mb-0">📊 AI tahlili</h3>
                 <span class="chip chip-accent">Gemini AI</span>
             </div>
+
+            {# Fikr yo'q bo'lsa panel yashirilmaydi, chunki rahbar bo'limning
+               mavjudligini va qanday toifalar borligini bilishi kerak. Nol
+               ma'lumotni diagramma bilan ko'rsatib bo'lmaydi, shuning uchun
+               grafik o'rniga toifalar ro'yxati chiziladi. #}
+            {% if total_count == 0 %}
+            <p class="text-muted text-sm mb-3">
+                Hozircha tahlil qilinadigan fikr yo'q. Birinchi fikr kelgach,
+                bu yerda toifalar bo'yicha taqsimot va diagrammalar paydo bo'ladi.
+            </p>
+            <div class="chart-legend" style="border-top: none; padding-top: 0;">
+                {% for cat in categories %}
+                <div class="legend-item">
+                    <span class="legend-dot legend-dot-{{ cat.key }}"></span>
+                    <span class="legend-label">{{ cat.label }}</span>
+                    <span class="legend-value">0</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
 
             <div class="chart-grid">
                 <!-- Donut diagramma -->
@@ -57,8 +76,8 @@
                 </div>
                 {% endfor %}
             </div>
+            {% endif %}
         </div>
-        {% endif %}
 
         <!-- ── Fikrlar va filtr ── -->
         <div class="card">
