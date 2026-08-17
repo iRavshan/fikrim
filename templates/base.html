@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
@@ -7,30 +7,30 @@
     <title>{% block title %}Fikrim{% endblock %}</title>
     <style>
         /* ---- Ranglar tizimi ----------------------------------------------
-           Asos palitra: #ff771c (to'q sariq), #f5ede0 (krem),
-           #161311 (qora), #546877 (shifer-ko'k).
+           Palitra logotipdan olingan: yorqin ko'k #0078fc (belgi gradienti),
+           to'q siyoh-ko'k #000c30 (yozuv), och ko'k #c0e4fc.
 
-           Diqqat: to'q sariq fonda OQ matn 2.66:1 kontrast beradi va WCAG
-           talabini bajarmaydi, qora matn esa 6.97:1. Shuning uchun
-           --on-accent qora, oq emas. */
+           Urg'u sifatida logotipning aynan o'z ko'ki emas, bir oz to'qrog'i
+           ishlatiladi: #0078fc fonida oq matn 4.12 kontrast beradi va WCAG
+           talabidan (4.5) past, #0b6fe0 esa 4.81 beradi. */
         :root {
-            --bg: #f5ede0;
-            --surface: #fffdf9;
-            --surface-2: #ece2d2;
-            --text: #161311;
-            --muted: #546877;
-            --border: #e0d4c1;
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --surface-2: #e9eef7;
+            --text: #0a1233;
+            --muted: #5a6a8a;
+            --border: #dbe3ef;
 
-            --accent: #ff771c;
-            --accent-hover: #e8630c;
-            --accent-soft: #ffeada;
-            --on-accent: #161311;
+            --accent: #0b6fe0;
+            --accent-hover: #0959bd;
+            --accent-soft: #e3edfd;
+            --on-accent: #ffffff;
 
-            --danger: #b3261e;
-            --danger-soft: #fbeae8;
-            --on-danger: #fffdf9;
-            --success: #2f6b52;
-            --success-soft: #e6f0eb;
+            --danger: #c62828;
+            --danger-soft: #fdecec;
+            --on-danger: #ffffff;
+            --success: #1c7a56;
+            --success-soft: #e6f4ee;
 
             /* Toifa ranglari (grafik, badge va legenda uchun yagona manba).
                Kategorik palitra validator bilan tekshirilgan: eng yomon
@@ -45,29 +45,34 @@
 
             --radius: 12px;
             --radius-sm: 8px;
-            --shadow: 0 1px 2px rgba(22, 19, 17, 0.05), 0 4px 16px rgba(22, 19, 17, 0.06);
+            --shadow: 0 1px 2px rgba(10, 18, 51, 0.05), 0 4px 16px rgba(10, 18, 51, 0.07);
             --ring: 0 0 0 3px var(--accent-soft);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #161311;
-                --surface: #1f1b18;
-                --surface-2: #2a2420;
-                --text: #f5ede0;
-                --muted: #9aabb8;
-                --border: #342d27;
+                --bg: #080e22;
+                --surface: #0f172f;
+                --surface-2: #1a2340;
+                --text: #e8edf8;
+                --muted: #9aa8c4;
+                --border: #222d4d;
 
-                --accent: #ff771c;
-                --accent-hover: #ff9042;
-                --accent-soft: #3a2410;
-                --on-accent: #161311;
+                /* Qorong'i rejimda urg'u ochroq bo'lishi kerak, lekin
+                   grafikdagi ko'k toifa rangiga (#4e9ae0) o'xshab qolmasligi
+                   ham lozim. #3d8bfd ikkalasini uddalaydi: havola kontrasti
+                   5.76, grafik ko'kidan farqi dE 6.7. Tugma ustidagi matn
+                   esa oq emas, to'q — oq atigi 3.33 beradi. */
+                --accent: #3d8bfd;
+                --accent-hover: #6aa6ff;
+                --accent-soft: #13224a;
+                --on-accent: #08122b;
 
-                --danger: #f08a80;
-                --danger-soft: #33201d;
-                --on-danger: #161311;
-                --success: #6fc39d;
-                --success-soft: #172a23;
+                --danger: #f28b82;
+                --danger-soft: #33191c;
+                --on-danger: #08122b;
+                --success: #5ec99b;
+                --success-soft: #102a22;
 
                 /* Qorong'i rejim uchun alohida tanlangan qadamlar — yorug'
                    rejimning avtomatik ag'darilishi emas. Qorong'i sirtga
@@ -143,16 +148,24 @@
             color: var(--text);
             text-decoration: none;
         }
-        .brand-mark {
-            width: 26px;
-            height: 26px;
-            border-radius: 7px;
-            background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--muted)));
-            color: var(--on-accent);
-            display: grid;
-            place-items: center;
-            font-size: 0.8rem;
-            font-weight: 700;
+        .brand-logo {
+            height: 30px;
+            width: auto;
+            display: block;
+        }
+        @media (max-width: 640px) {
+            .brand-logo { height: 26px; }
+        }
+        /* Logotipdagi "Fikrim" yozuvi to'q ko'k rangda va qorong'i fonda
+           deyarli ko'rinmaydi. Ochiq tagliq qo'yamiz, shunda logotip har
+           ikkala rejimda ham o'qiladi. Kelajakda yorug' variantli alohida
+           fayl qo'shilsa, bu tagliqni olib tashlash mumkin. */
+        @media (prefers-color-scheme: dark) {
+            .brand-logo {
+                background: #ffffff;
+                border-radius: 7px;
+                padding: 3px 7px;
+            }
         }
         nav {
             display: flex;
@@ -587,7 +600,7 @@
             border-radius: 50%;
             /* Rasm har xil rangda bo'lishi mumkin, shuning uchun tugma
                o'z foni bilan ajralib turadi */
-            background: rgba(22, 19, 17, 0.65);
+            background: rgba(8, 18, 43, 0.65);
             color: #fff;
             font-size: 1rem;
             line-height: 1;
@@ -606,7 +619,7 @@
             padding: 0.1rem 0.3rem;
             font-size: 0.65rem;
             color: #fff;
-            background: linear-gradient(transparent, rgba(22, 19, 17, 0.75));
+            background: linear-gradient(transparent, rgba(8, 18, 43, 0.75));
             text-align: right;
         }
         .helptext-error { color: var(--danger); }
@@ -704,9 +717,8 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="{% url 'dashboard' %}" class="brand">
-                <span class="brand-mark">F</span>
-                Fikrim
+            <a href="{% url 'dashboard' %}" class="brand" aria-label="Fikrim">
+                <img src="{% static 'logo.png' %}" alt="Fikrim" class="brand-logo">
             </a>
             <nav>
                 {% if user.is_authenticated %}

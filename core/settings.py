@@ -29,6 +29,10 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Django production'da statik fayllarni o'zi tarqatmaydi. WhiteNoise
+    # ularni gunicorn oldida tarqatadi, shuning uchun logotip va boshqa
+    # fayllar saytda ham ochiladi. SecurityMiddleware dan keyin turishi shart.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -217,7 +221,10 @@ if _R2_SOZLANGAN:
             },
         },
         'staticfiles': {
-            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+            # Manifest variantini ishlatmaymiz: u shablon ichida
+            # ko'rsatilgan bironta fayl topilmasa collectstatic'ni
+            # to'xtatadi va deploy butunlay yiqiladi.
+            'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
         },
     }
 else:
@@ -228,6 +235,9 @@ else:
             'BACKEND': 'django.core.files.storage.FileSystemStorage',
         },
         'staticfiles': {
-            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+            # Manifest variantini ishlatmaymiz: u shablon ichida
+            # ko'rsatilgan bironta fayl topilmasa collectstatic'ni
+            # to'xtatadi va deploy butunlay yiqiladi.
+            'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
         },
     }
