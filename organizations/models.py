@@ -72,6 +72,16 @@ class Feedback(models.Model):
         verbose_name="Toifa",
         db_index=True,
     )
+    # Toifalash muvaffaqiyatli bajarilgan vaqt. NULL bo'lsa — toifa hali
+    # aniqlanmagan: chaqiruv yiqilgan yoki umuman bajarilmagan.
+    #
+    # Bu maydonsiz haqiqiy 'boshqa' bilan "aniqlab bo'lmadi" bir xil
+    # ko'rinadi. Aynan shuning uchun avval qayta urinish imkonsiz edi:
+    # 'boshqa' larni qayta so'rasak, chin 'boshqa' fikrlar har safar
+    # qaytadan Gemini'ga yuborilaverardi va kvota behuda sarflanardi.
+    classified_at = models.DateTimeField(
+        null=True, blank=True, db_index=True, verbose_name="Toifalangan vaqt"
+    )
     # Takrorlanishni aniqlash uchun sha256(salt + xona + IP). Xom IP manzil
     # bazaga yozilmaydi va hashdan qayta tiklab bo'lmaydi, shuning uchun
     # bemor anonim qoladi.

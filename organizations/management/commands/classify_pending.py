@@ -1,12 +1,16 @@
-"""Toifasi aniqlanmay qolgan fikrlarni qayta tasniflaydi.
+"""Toifalanmay qolgan fikrlarni qayta tasniflaydi.
 
-Gemini chaqiruvi muvaffaqiyatsiz bo'lganda fikr 'boshqa' toifasiga
-tushadi va uni haqiqiy 'boshqa' dan ajratib bo'lmaydi. Shu sababli API
-vaqtincha ishlamay qolsa, fikrlar jimgina tasniflanmagan holda qoladi.
+Fikr yuborilganda toifalash fon oqimida bajariladi. Bu oqim yiqilishi
+mumkin: Gemini javob bermasligi, kvota tugashi yoki konteyner qayta
+ishga tushib oqimni uzib yuborishi mumkin. Bunday holatda fikr
+saqlanadi, lekin classified_at NULL bo'lib qoladi.
 
-Bu buyruq shundaylarni qaytadan tasniflaydi. Uni API ishlayotgan
-istalgan muhitdan ishga tushirish mumkin — jumladan lokal kompyuterdan,
-agar serverdagi chaqiruv ishlamayotgan bo'lsa.
+Bu buyruq aynan shundaylarni topib qayta uradi. Muvaffaqiyatsiz
+urinish classified_at ni o'zgartirmaydi, shuning uchun keyingi ishga
+tushishda fikr yana navbatda turadi — API tiklangach o'zi tasniflanadi.
+
+Cron bilan muntazam ishga tushirilishi ko'zda tutilgan. Qo'lda ham
+ishlatish mumkin, jumladan lokal kompyuterdan.
 
 Misollar:
     python manage.py classify_pending --dry-run
@@ -14,13 +18,14 @@ Misollar:
 """
 
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from organizations.models import Feedback
 from organizations.utils import classify_feedback
 
 
 class Command(BaseCommand):
-    help = "Toifasi 'boshqa' bo'lgan fikrlarni Gemini orqali qayta tasniflaydi"
+    help = "Toifalanmay qolgan fikrlarni Gemini orqali qayta tasniflaydi"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,39 +41,55 @@ class Command(BaseCommand):
         limit = options['limit']
         quruq = options['dry_run']
 
+        # Eng yangi fikrlar birinchi: kvota cheklangan bo'lsa, rahbar uchun
+        # eng dolzarb bo'lganlari tasniflanadi.
         fikrlar = list(
-            Feedback.objects.filter(category='boshqa').order_by('-created_at')[:limit]
+            Feedback.objects
+            .filter(classified_at__isnull=True)
+            .order_by('-created_at')[:limit]
         )
 
         if not fikrlar:
-            self.stdout.write("Qayta tasniflanadigan fikr topilmadi.")
+            self.stdout.write("Toifalanmagan fikr yo'q — hammasi joyida.")
             return
 
+        qolgan = Feedback.objects.filter(classified_at__isnull=True).count()
         self.stdout.write(
-            f"{len(fikrlar)} ta fikr tekshiriladi"
+            f"Navbatda {qolgan} ta fikr, shundan {len(fikrlar)} tasi olinadi"
             + (" (quruq rejim, bazaga yozilmaydi)" if quruq else "")
             + "\n"
         )
 
-        ozgargan = 0
+        aniqlangan = 0
+        yiqilgan = 0
         for fikr in fikrlar:
             toifa = classify_feedback(fikr.text)
-            belgi = " " if toifa == 'boshqa' else "*"
-            self.stdout.write(
-                f"  {belgi} {toifa:<10} <- {fikr.text[:52]}"
-            )
-            if toifa != 'boshqa':
-                ozgargan += 1
-                if not quruq:
-                    Feedback.objects.filter(pk=fikr.pk).update(category=toifa)
 
-        xulosa = f"\nTayyor: {ozgargan} ta fikr toifasi aniqlandi, " \
-                 f"{len(fikrlar) - ozgargan} tasi 'boshqa' bo'lib qoldi."
-        if ozgargan:
-            self.stdout.write(self.style.SUCCESS(xulosa))
-        else:
-            # Bitta ham aniqlanmasa, ehtimol API umuman ishlamayapti
+            if toifa is None:
+                yiqilgan += 1
+                self.stdout.write(f"  ! yiqildi    <- {fikr.text[:52]}")
+                # Ketma-ket yiqilishlar API umuman ishlamayotganini
+                # bildiradi. Qolganini bekorga urib, kvota sarflamaymiz.
+                if yiqilgan >= 3 and aniqlangan == 0:
+                    self.stdout.write(self.style.ERROR(
+                        "\nKetma-ket 3 ta chaqiruv yiqildi — to'xtatildi.\n"
+                        "Sababni ko'rish uchun: python manage.py gemini_holati"
+                    ))
+                    return
+                continue
+
+            aniqlangan += 1
+            belgi = " " if toifa == 'boshqa' else "*"
+            self.stdout.write(f"  {belgi} {toifa:<10} <- {fikr.text[:52]}")
+            if not quruq:
+                Feedback.objects.filter(pk=fikr.pk).update(
+                    category=toifa, classified_at=timezone.now()
+                )
+
+        xulosa = f"\nTayyor: {aniqlangan} ta toifalandi"
+        if yiqilgan:
             self.stdout.write(self.style.WARNING(
-                xulosa + "\nBitta ham toifa aniqlanmadi — Gemini chaqiruvi "
-                "ishlayotganini tekshiring (kalit, kvota, tarmoq)."
+                f"{xulosa}, {yiqilgan} tasi yiqildi va navbatda qoldi."
             ))
+        else:
+            self.stdout.write(self.style.SUCCESS(xulosa + "."))

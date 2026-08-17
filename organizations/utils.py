@@ -37,16 +37,26 @@ SYSTEM_PROMPT = (
 )
 
 
-def classify_feedback(text: str) -> str:
+def classify_feedback(text: str):
     """Berilgan matnni Gemini API orqali toifaga ajratadi.
 
-    API kalit o'rnatilmagan bo'lsa yoki so'rov muvaffaqiyatsiz bo'lsa
-    xavfsiz ravishda 'boshqa' toifasini qaytaradi.
+    Qaytaradi:
+        str  — aniqlangan toifa kaliti (chin 'boshqa' ham shu yerga kiradi)
+        None — toifalab bo'lmadi: kalit yo'q, so'rov yiqildi yoki javob
+               tushunarsiz. Chaqiruvchi buni keyinroq qayta urinishi kerak.
+
+    Muvaffaqiyatsizlikda 'boshqa' qaytarilmaydi. Aks holda xato jimgina
+    haqiqiy natijaga o'xshab qolardi va tasniflanmagan fikr abadiy
+    'boshqa' bo'lib qolardi — aynan shu sababdan oldingi versiyada
+    nosozlikni sezish ham, tuzatish ham imkonsiz edi.
     """
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
-        logger.warning("GEMINI_API_KEY o'rnatilmagan, fikr 'boshqa' toifasiga tushdi.")
-        return 'boshqa'
+        logger.warning(
+            "GEMINI_API_KEY o'rnatilmagan — toifalash o'tkazib yuborildi. "
+            "Railway > Variables ichida kalit borligini tekshiring."
+        )
+        return None
 
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -96,7 +106,7 @@ def classify_feedback(text: str) -> str:
                 "Gemini javobi token limitida uzildi, toifa aniqlanmadi. "
                 "maxOutputTokens yoki thinkingConfig sozlamasini tekshiring."
             )
-            return 'boshqa'
+            return None
 
         raw = ""
         for part in parts:
@@ -117,13 +127,24 @@ def classify_feedback(text: str) -> str:
             if cat in raw:
                 return cat
 
-        logger.info("Gemini kutilmagan javob qaytardi: %s", raw)
-        return 'boshqa'
+        logger.info("Gemini kutilmagan javob qaytardi: %r", raw)
+        return None
 
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError,
+    except urllib.error.HTTPError as exc:
+        # Xato tanasida sabab yoziladi (noto'g'ri kalit, tugagan kvota,
+        # topilmagan model). Statusning o'zi bularni ajratmaydi, shuning
+        # uchun tanasi ham logga tushadi.
+        try:
+            tafsilot = exc.read().decode('utf-8', 'replace')[:400]
+        except Exception:
+            tafsilot = "(javob tanasi o'qilmadi)"
+        logger.error("Gemini API HTTP %s: %s", exc.code, tafsilot)
+        return None
+
+    except (urllib.error.URLError, json.JSONDecodeError,
             KeyError, IndexError, TimeoutError) as exc:
-        logger.error("Gemini API so'rovida xatolik: %s", exc)
-        return 'boshqa'
+        logger.error("Gemini API so'rovida xatolik: %s: %s", type(exc).__name__, exc)
+        return None
 
 
 def classify_feedback_async(feedback_id):
@@ -138,6 +159,7 @@ def classify_feedback_async(feedback_id):
         # Django har bir oqimga alohida DB ulanishi ochadi, oxirida uni
         # yopmasak ulanish ochiq qolib ketadi.
         from django.db import connection
+        from django.utils import timezone
         from .models import Feedback
         # Boshlanish va natija alohida yoziladi: shunda loglarda "oqim
         # umuman ishga tushmadi" holati "ishga tushdi, lekin xato berdi"
@@ -147,11 +169,22 @@ def classify_feedback_async(feedback_id):
         try:
             fikr = Feedback.objects.get(pk=feedback_id)
             toifa = classify_feedback(fikr.text)
-            if toifa != fikr.category:
-                Feedback.objects.filter(pk=feedback_id).update(category=toifa)
+            if toifa is None:
+                # classified_at NULL bo'lib qoladi, ya'ni classify_pending
+                # buni keyinroq o'zi topib qayta uradi. Fikr yo'qolmaydi.
+                logger.warning(
+                    "Fikr %s: toifalanmadi, navbatda qoldi", feedback_id
+                )
+                return
+            Feedback.objects.filter(pk=feedback_id).update(
+                category=toifa, classified_at=timezone.now()
+            )
             logger.info("Fikr %s: toifa = %s", feedback_id, toifa)
         except Exception as exc:
-            logger.error("Fikr %s: fon toifalashda xatolik: %s", feedback_id, exc)
+            logger.error(
+                "Fikr %s: fon toifalashda xatolik: %s: %s",
+                feedback_id, type(exc).__name__, exc,
+            )
         finally:
             connection.close()
 
