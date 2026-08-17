@@ -31,10 +31,12 @@
                 <span class="chip chip-accent">Gemini AI</span>
             </div>
 
-            {# Fikr yo'q bo'lsa panel yashirilmaydi, chunki rahbar bo'limning
-               mavjudligini va qanday toifalar borligini bilishi kerak. Nol
-               ma'lumotni diagramma bilan ko'rsatib bo'lmaydi, shuning uchun
-               grafik o'rniga toifalar ro'yxati chiziladi. #}
+            {% comment %}
+                Fikr yo'q bo'lsa panel yashirilmaydi, chunki rahbar bo'limning
+                mavjudligini va qanday toifalar borligini bilishi kerak. Nol
+                ma'lumotni diagramma bilan ko'rsatib bo'lmaydi, shuning uchun
+                grafik o'rniga toifalar ro'yxati chiziladi.
+            {% endcomment %}
             {% if total_count == 0 %}
             <p class="text-muted text-sm mb-3">
                 Hozircha tahlil qilinadigan fikr yo'q. Birinchi fikr kelgach,
