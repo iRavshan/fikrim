@@ -59,6 +59,11 @@ class Feedback(models.Model):
         Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='feedbacks'
     )
     text = models.TextField(verbose_name="Fikr va mulohaza")
+    # Ixtiyoriy dalil rasmi. Saqlashdan oldin images.sanitize_image() orqali
+    # o'tkaziladi: EXIF (GPS, telefon modeli) tozalanadi va hajmi kichrayadi.
+    image = models.ImageField(
+        upload_to='feedback/', blank=True, null=True, verbose_name="Rasm"
+    )
     category = models.CharField(
         max_length=20,
         choices=CATEGORY_CHOICES,

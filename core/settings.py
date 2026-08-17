@@ -91,6 +91,15 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Birlamchi kalit maydonining turi.
+# Ochiq yozilmagan bo'lsa, javob Django versiyasiga qarab o'zgaradi:
+# 6.0 gacha AutoField, undan keyin BigAutoField. Shu sababli lokal va
+# production har xil versiyada bo'lganda makemigrations har safar
+# maydonni u yoqdan bu yoqqa o'zgartirmoqchi bo'lardi. Qiymat ochiq
+# ko'rsatilgani uchun endi ikkala muhitda ham bir xil natija chiqadi.
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
@@ -129,3 +138,66 @@ SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
 # Gemini API — fikr-mulohazalarni avtomatik toifalash uchun
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
+
+# ── Rasmlarni saqlash: Cloudflare R2 ────────────────────────────────────
+# Railway fayl tizimi har deployda tozalanadi, shuning uchun bemor yuborgan
+# rasmlar u yerda saqlanmaydi — QR kodlardan farqli, rasmni qayta
+# generatsiya qilib bo'lmaydi. R2 S3 bilan mos, shuning uchun django-storages
+# ning S3 backend'i ishlatiladi.
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', '')
+R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL', '')
+# Bucket'ning ommaviy manzili. django-storages faqat host nomini kutadi,
+# Cloudflare panelidan nusxa olinganda esa manzil "https://" bilan keladi.
+# Ikkala shakl ham ishlashi uchun sxema va oxirgi chiziq olib tashlanadi —
+# aks holda havola "https://https://..." bo'lib, rasmlar ochilmaydi.
+R2_PUBLIC_DOMAIN = os.environ.get('R2_PUBLIC_DOMAIN', '').strip()
+R2_PUBLIC_DOMAIN = (
+    R2_PUBLIC_DOMAIN
+    .removeprefix('https://')
+    .removeprefix('http://')
+    .rstrip('/')
+)
+
+_R2_SOZLANGAN = all([
+    R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_ENDPOINT_URL,
+])
+
+if _R2_SOZLANGAN:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                'access_key': R2_ACCESS_KEY_ID,
+                'secret_key': R2_SECRET_ACCESS_KEY,
+                'bucket_name': R2_BUCKET_NAME,
+                'endpoint_url': R2_ENDPOINT_URL,
+                'region_name': 'auto',
+                'signature_version': 's3v4',
+                # R2 ACL'ni qo'llab-quvvatlamaydi, ommaviy kirish bucket
+                # sozlamasidan beriladi.
+                'default_acl': None,
+                # Imzosiz, muddatsiz URL — rasm <img> tegida ochilishi kerak.
+                'querystring_auth': False,
+                # Bir xil nomli fayl ustiga yozilmasin.
+                'file_overwrite': False,
+                'custom_domain': R2_PUBLIC_DOMAIN or None,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
+else:
+    # R2 sozlanmagan — lokal diskka tushamiz. Lokal ishlash uchun bu yetarli,
+    # lekin production'da bu rasmlar deployda yo'qolishini anglatadi.
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }

@@ -118,6 +118,13 @@
                                     {{ feedback.get_category_display }}
                                 </span>
                             </div>
+                            {% if feedback.image %}
+                                <a href="{{ feedback.image.url }}" target="_blank" rel="noopener"
+                                   title="Kattalashtirish uchun bosing">
+                                    <img src="{{ feedback.image.url }}" alt="Fikrga biriktirilgan rasm"
+                                         loading="lazy" class="feedback-thumb">
+                                </a>
+                            {% endif %}
                             <small class="text-muted">
                                 {{ feedback.created_at|date:"d M Y, H:i" }}
                                 {% if feedback.room %} &middot; {{ feedback.room }}{% endif %}

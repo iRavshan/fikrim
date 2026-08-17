@@ -7,6 +7,7 @@ from django.db.models import Count
 from .models import Organization, Feedback
 from .forms import OrganizationForm, FeedbackForm
 from .utils import classify_feedback_async
+from .images import sanitize_image
 from django.urls import reverse
 from io import BytesIO
 import qrcode
@@ -138,10 +139,14 @@ def delete_organization(request, org_id):
 def submit_feedback(request, org_id):
     org = get_object_or_404(Organization, id=org_id)
     if request.method == 'POST':
-        form = FeedbackForm(request.POST)
+        form = FeedbackForm(request.POST, request.FILES)
         if form.is_valid():
             feedback = form.save(commit=False)
             feedback.organization = org
+            if feedback.image:
+                # Rasm bemorning GPS koordinatalari va telefon ma'lumotlarini
+                # o'zi bilan olib kelishi mumkin — saqlashdan oldin tozalanadi.
+                feedback.image = sanitize_image(feedback.image)
             feedback.save()
             # Toifalash fonda bajariladi: Gemini javobi ~17 soniya oladi va
             # bemor uni kutib turmasligi kerak. Fikr darhol saqlanadi,

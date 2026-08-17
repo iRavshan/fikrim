@@ -14,8 +14,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
+# .venv314 kabi nomlar ham tushsin — versiya almashtirishda yonma-yon
+# turgan muhitlar tasodifan commit qilinmasligi uchun
+.venv*/
+venv*/
 env/
 ENV/
 *.egg-info/
