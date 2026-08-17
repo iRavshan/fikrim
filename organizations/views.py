@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.db.models import Count
 from .models import Organization, Feedback
 from .forms import OrganizationForm, FeedbackForm
-from .utils import classify_feedback
+from .utils import classify_feedback_async
 from django.urls import reverse
 from io import BytesIO
 import qrcode
@@ -142,9 +142,11 @@ def submit_feedback(request, org_id):
         if form.is_valid():
             feedback = form.save(commit=False)
             feedback.organization = org
-            # Gemini API orqali fikrni avtomatik toifalash
-            feedback.category = classify_feedback(feedback.text)
             feedback.save()
+            # Toifalash fonda bajariladi: Gemini javobi ~17 soniya oladi va
+            # bemor uni kutib turmasligi kerak. Fikr darhol saqlanadi,
+            # toifa esa bir necha soniyadan keyin yangilanadi.
+            classify_feedback_async(feedback.pk)
             return redirect('feedback_success')
     else:
         form = FeedbackForm()

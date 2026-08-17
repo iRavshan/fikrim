@@ -2,12 +2,18 @@
 
 import json
 import logging
+import threading
 import urllib.request
 import urllib.error
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+# O'lchangan javob vaqti barqaror ravishda 16-18 soniya. Limit 15 edi va
+# shu sababli har bir so'rov uzilib, fikrlar 'boshqa' toifasiga tushardi.
+# Sekinroq tarmoq uchun zaxira bilan 40 soniya qo'yildi.
+REQUEST_TIMEOUT = 40
 
 # Ruxsat etilgan toifa kalitlari — modelda CATEGORY_CHOICES bilan mos
 ALLOWED_CATEGORIES = {'xodimlar', 'sharoit', 'tibbiy', 'moliyaviy', 'boshqa'}
@@ -74,7 +80,7 @@ def classify_feedback(text: str) -> str:
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
             body = json.loads(resp.read().decode('utf-8'))
 
         # Gemini 3.5-flash "thinking" model — javob parts ichida
@@ -118,4 +124,33 @@ def classify_feedback(text: str) -> str:
             KeyError, IndexError, TimeoutError) as exc:
         logger.error("Gemini API so'rovida xatolik: %s", exc)
         return 'boshqa'
+
+
+def classify_feedback_async(feedback_id):
+    """Fikrni fon oqimida toifalab, yozuvni yangilaydi.
+
+    Gemini javobi taxminan 17 soniyada keladi. Agar tasniflash fikr
+    yuborish so'rovining ichida bajarilsa, bemor shuncha vaqt kutadi va
+    sahifa qotib qolgandek ko'rinadi. Shuning uchun fikr avval saqlanadi,
+    toifa esa keyin fonda yangilanadi.
+    """
+    def ish():
+        # Django har bir oqimga alohida DB ulanishi ochadi, oxirida uni
+        # yopmasak ulanish ochiq qolib ketadi.
+        from django.db import connection
+        from .models import Feedback
+        try:
+            fikr = Feedback.objects.get(pk=feedback_id)
+            toifa = classify_feedback(fikr.text)
+            if toifa != fikr.category:
+                Feedback.objects.filter(pk=feedback_id).update(category=toifa)
+        except Exception as exc:
+            logger.error("Fon toifalashda xatolik: %s", exc)
+        finally:
+            connection.close()
+
+    # daemon=True: server o'chirilayotganda oqim jarayonni ushlab turmaydi.
+    # Tasniflash ulgurmay qolsa fikr 'boshqa' bo'lib qoladi, lekin fikrning
+    # o'zi hech qachon yo'qolmaydi.
+    threading.Thread(target=ish, daemon=True).start()
 
